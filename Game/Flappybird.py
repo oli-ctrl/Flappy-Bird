@@ -561,12 +561,15 @@ class Game():
         self.pipeTime = time.time()
         self.cloudTime = time.time()
         self.shrubTime = time.time()
+        self.pipeNextTime = 3
         self.shrubNextTime = random.randint(1, 300)/100
+
+
         self.menu.construct()
         self.running = True
         self.firstlaunch = True
         self.pipecontroller.add(Pipe(1400, random.randint(300,600)))
-        self.pipecontroller.add(Pipe(1000, random.randint(300,600)))
+        self.pipecontroller.add(Pipe(800, random.randint(300,600)))
 
     def draw(self):
         ## always draw 
@@ -619,10 +622,17 @@ class Game():
                 self.bird.die()
                 self.gamestate = "Menu"
                 self.fade.fadein()
-        ## add a pipe every 2 seconds and cloud every 1.5 seconds
-        if time.time() - self.pipeTime >= 2:
+        ## add a pipe every 3(decreases) seconds and cloud every 1.5 seconds
+        if time.time() - self.pipeTime >= self.pipeNextTime and self.bird.alive:
             self.pipeTime = time.time()
             self.pipecontroller.add(Pipe(1400, random.randint(300,600)))
+            if self.pipeNextTime > 2:
+                self.pipeNextTime -= 0.05
+            elif self.pipeNextTime > 1:
+                self.pipeNextTime -= 0.01
+            else:
+                self.pipeNextTime -= 0.001
+            print(f"Next pipe in {self.pipeNextTime} seconds")
         if time.time() - self.cloudTime >= 1.5:
             self.cloudcontroller.add(cloud())
             self.cloudTime = time.time()
@@ -644,10 +654,11 @@ class Game():
             self.bird.reset()
             self.pipecontroller.reset()
             self.pipecontroller.add(Pipe(1400, random.randint(300,600)))
-            self.pipecontroller.add(Pipe(1000, random.randint(300,600)))
+            self.pipecontroller.add(Pipe(800, random.randint(300,600)))
             self.fade.fadein()
             self.bird.jump()
             self.pipeTime = time.time()
+            self.pipeNextTime = 3
     ## draw the score
     def drawscore(self, score, x = 640, y = 120, size = 2):
         if self.debug:
@@ -658,8 +669,6 @@ class Game():
         font = pygame.font.SysFont("Arial", 50)
         text = font.render(f"FPS: {round(clock.get_fps())}", True, "black")
         screen.blit(text, (0, 50))
-
-
 
 game = Game()
 ## get the highscore from the file
