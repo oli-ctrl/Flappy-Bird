@@ -404,12 +404,20 @@ class fades():
         self.fade.set_alpha(0)
     def fadeout(self):
         for alpha in range(1, 255, 1):
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game.running = False
+                    return
             self.fade.set_alpha(alpha)
             screen.blit(self.fade, (0,0))
             pygame.display.flip()
             pygame.time.delay(5)
     def fadein(self):
         for alpha in range(255, 1, -4):
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game.running = False
+                    return
             if alpha <250:
                 screen.fill("Blue")
             else:
