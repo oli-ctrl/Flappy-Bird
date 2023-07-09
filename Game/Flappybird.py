@@ -197,6 +197,7 @@ class Bird():
         self.alive = "dying"
         count = -5
         self.velocity = 0
+        game.drawscore(self.score, 640, 185, 2)
         for i in range (0,25):
             game.particlecontroller.add(particle(self.x, self.y, random.randint(3,7), "red", random.randint(-20,20)/10, random.randint(-20,20)/10, 0.5, 40, 0.5, True, 0.6))
         while self.y <= 680:
@@ -205,6 +206,7 @@ class Bird():
             screen.fill((0,0,0))
             game.draw()
             game.updateall()
+            
             self.x -= 5
             pygame.display.flip()
             clock.tick(60)
@@ -229,6 +231,7 @@ class Bird():
             clock.tick(60)
             count += 1
             if count >= 100:
+                game.fade.fadeout()
                 return True
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -282,7 +285,7 @@ class Pipe ():
     
     ## check if the pipe is off the screen or the bird has passed
     def check(self):
-        if self.x <= game.bird.x and not self.givenpoint:
+        if self.x <= game.bird.x and not self.givenpoint and game.bird.alive and game.gamestate == "Playing":
             game.bird.score += 1
             self.givenpoint = True
         if self.x < -100:
@@ -295,38 +298,59 @@ class mainmenu():
         self.alltexts = []
         self.other = []
     def draw(self):
+        for i in self.other:
+            i.render()
         for i in self.allbuttons:
             i.draw()
             i.check()
         for i in self.alltexts:
             i.render()
-        for i in self.other:
-            i.render()
+
     def construct(self):
         self.allbuttons.append(playButton())
+        self.other.append(Image(390, 15, 500, 700,"MenuBackground.png"))
+        
+## image class for easy rendering of static images
+class Image():
+    def __init__(self, x, y, height, width, image):
+        self.x = x
+        self.y = y
+        self.image = pygame.image.load(str(path) + image)
+        self.image = pygame.transform.scale(self.image, (height, width))
+        self.imagewidth = self.image.get_width()
+        self.imageheight = self
+    def render(self):
+        screen.blit(self.image, (self.x, self.y))
 
 ## play button class
 class playButton():
     def __init__(self):
-        self.x = 300
-        self.y = 300
+        self.x = 565
+        self.y = 500
         self.imagewidth = 75
         self.imageheight = 50
         self.width = 150
         self.height = 100
         self.Image = pygame.image.load(str(path) + "PlayButton.png")
         self.Image = pygame.transform.scale(self.Image,(self.imagewidth*2, self.imageheight*2))
+        self.HoverImage = pygame.image.load(str(path) + "PlayButton_Hover.png")
+        self.HoverImage = pygame.transform.scale(self.HoverImage,(self.imagewidth*2, self.imageheight*2))
         self.clicked = False
+        self.hover = False
     def draw(self):
-        screen.blit(self.Image, (self.x, self.y))
+        if self.hover:
+            screen.blit(self.HoverImage, (self.x, self.y))
+        else:
+            screen.blit(self.Image, (self.x, self.y))
         if game.debug:
             pygame.draw.rect(screen, "red", (self.x, self.y, self.width, self.height))
     def check(self):
-        if pygame.mouse.get_pos()[0] > self.x and pygame.mouse.get_pos()[0] < self.x + self.width:
-            if pygame.mouse.get_pos()[1] > self.y and pygame.mouse.get_pos()[1] < self.y + self.height:
-                self.hover = True
-                if pygame.mouse.get_pressed()[0]:
-                    self.onclick()
+        if pygame.mouse.get_pos()[0] > self.x and pygame.mouse.get_pos()[0] < self.x + self.width and pygame.mouse.get_pos()[1] > self.y and pygame.mouse.get_pos()[1] < self.y + self.height:
+            self.hover = True
+            if pygame.mouse.get_pressed()[0]:
+                self.onclick()
+        else:
+            self.hover = False
     def onclick(self):
         self.clicked = True
 
@@ -385,7 +409,7 @@ class fades():
             pygame.display.flip()
             pygame.time.delay(5)
     def fadein(self):
-        for alpha in range(255, 1, -3):
+        for alpha in range(255, 1, -4):
             if alpha <250:
                 screen.fill("Blue")
             else:
@@ -490,6 +514,18 @@ class shrub():
         if self.x < -100:
             game.shrubcontroller.allshrubs.remove(self)
 
+class drawnumber():
+    def __init__(self):
+        self.numbers = []
+        for i in range(0, 10):
+            self.numbers.append(pygame.image.load(str(path) + "Number" + str(i) + ".png"))
+
+    def draw(self, number, x, y, size = 1):
+        number = str(number)
+        x -= len(number)*14*size
+        for i in range(0, len(number)):
+            screen.blit(pygame.transform.scale(self.numbers[int(number[i])], (int(28*size), int(36*size))), ((x + i*28*size), y))
+
 ## biiig game class that controls almost everything
 class Game():
     def __init__(self):
@@ -506,7 +542,8 @@ class Game():
         self.fade = fades()
         self.menu = mainmenu()
         self.shrubcontroller = shrubs()
-
+        self.drawnumber = drawnumber()
+        self.highscore = 0
 
         self.pipeTime = time.time()
         self.cloudTime = time.time()
@@ -528,6 +565,7 @@ class Game():
         if self.gamestate == "Playing":
             self.bird.draw()
             self.drawscore(self.bird.score)
+
         if self.gamestate == "Menu":
             if not self.bird.alive:
                 self.bird.draw()
@@ -537,6 +575,11 @@ class Game():
             self.drawfps()
         self.ground.draw()
         self.shrubcontroller.draw()
+        ## stuff that is drawn even more on top 
+        if self.gamestate == "Menu":
+            self.menu.draw()
+            self.drawscore(self.bird.score, 640, 185, 2)
+            self.drawscore(self.highscore, 640, 410, 2)
 
     def updateall(self):
         self.cloudcontroller.move()
@@ -562,6 +605,7 @@ class Game():
             if self.bird.checkhit():
                 self.bird.die()
                 self.gamestate = "Menu"
+                self.fade.fadein()
         ## add a pipe every 2 seconds and cloud every 1.5 seconds
         if time.time() - self.pipeTime >= 2:
             self.pipeTime = time.time()
@@ -574,6 +618,8 @@ class Game():
                 self.shrubcontroller.add(shrub())
                 self.shrubTime = time.time()
                 self.shrubNextTime = random.randint(1, 100)/100
+        if self.bird.score > self.highscore:
+            self.highscore = self.bird.score
     ## toggle debug mode
     def toggledebug(self):
         if self.debug:
@@ -589,23 +635,25 @@ class Game():
             self.fade.fadein()
             self.bird.jump()
             self.pipeTime = time.time()
-
-    
-    ## simple functions
-    def drawscore(self,points):
-        font = pygame.font.SysFont("Arial", 50)
-        text = font.render(f"Points: {points}", True, "black")
-        screen.blit(text, (0, 0))
-
+    ## draw the score
+    def drawscore(self, score, x = 640, y = 120, size = 2):
+        if self.debug:
+            self.drawnumber.draw("0123456789", x, y, size)
+        else:
+            self.drawnumber.draw(score, x, y, size)
     def drawfps(self):
         font = pygame.font.SysFont("Arial", 50)
         text = font.render(f"FPS: {round(clock.get_fps())}", True, "black")
         screen.blit(text, (0, 50))
 
 
-game = Game()
 
-## time stuff for adding pipes and clouds
+game = Game()
+## get the highscore from the file
+f = open(str(path + "highscore.txt"), "r")
+game.highscore = int(f.read())
+f.close()
+## time stuff for adding clouds
 firstframe = True
 game.cloudcontroller.add(cloud(100))
 game.cloudcontroller.add(cloud(300))
@@ -627,8 +675,7 @@ while game.running:
     ## check if objects are of screen. if they are, remove them
     game.check()
     game.updateall()
-
-
+    game.draw()
     ## debug stuff
     debugtimer -= 1
     if pygame.key.get_pressed()[pygame.K_d] and debugtimer <= 0:
@@ -636,16 +683,12 @@ while game.running:
         game.toggledebug()
     ## menu stuff
     if game.gamestate == "Menu":
-        ## draw background stuff
-        game.draw()
-        ## draw the bird bleeding if its dead
+        ## spawn red particles if bird dead
         if not game.bird.alive:
             bloodcount += 1
             if bloodcount >= 5:
                 game.particlecontroller.add(particle(game.bird.x, game.bird.y, random.randint(3,7), "red", -10, random.randint(-10,10)/10, 0.5, random.randint(20,40), 0.5, True, 0.6))
                 bloodcount = 0
-        ## draw the menu
-        game.menu.draw()
         ## return to game 
         if pygame.key.get_pressed()[pygame.K_SPACE] or game.menu.allbuttons[0].clicked:
             game.fade.fadeout()
@@ -662,7 +705,6 @@ while game.running:
             firstframe = False
             pressed = False
             game.reset()
-            
         ## get inputs
         if pygame.key.get_pressed()[pygame.K_SPACE] and not pressed:
             game.bird.jump()
@@ -670,7 +712,6 @@ while game.running:
         else:
             if not pygame.key.get_pressed()[pygame.K_SPACE]:
                 pressed = False
-        game.draw()
 
 
 
@@ -678,7 +719,11 @@ while game.running:
     pygame.display.flip()
     clock.tick(60)  # limits FPS to 60
 
+## save the highscore
+f = open(str(path + "highscore.txt"), "w")
+print ("saving highscore")
+f.write(str(game.highscore))
+f.close()
 
 ## quit pygame
-
 pygame.quit()
