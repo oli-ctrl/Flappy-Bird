@@ -413,7 +413,9 @@ class fades():
             pygame.display.flip()
             pygame.time.delay(5)
     def fadein(self):
+        count = 0
         for alpha in range(255, 1, -4):
+            count += 1
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     game.running = False
@@ -422,12 +424,15 @@ class fades():
                 screen.fill("Blue")
             else:
                 screen.fill((0,0,0))
+            if count % 5 == 0 and not game.bird.alive:
+                game.particlecontroller.add(particle(game.bird.x, game.bird.y, random.randint(3,7), "red", -10, random.randint(-10,10)/10, 0.5, random.randint(20,40), 0.5, True, 0.6))
+            game.particlecontroller.update()
             game.draw()
             self.fade.set_alpha(alpha)
             screen.blit(self.fade, (0,0))
             pygame.display.flip()
-            pygame.time.delay(5)
         self.fade.set_alpha(0)
+        pygame.display.flip()
 
 ## background class
 class background():
