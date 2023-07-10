@@ -1,5 +1,4 @@
 import pygame
-import time
 import random
 import pathlib
 
@@ -456,26 +455,16 @@ class background():
 class ground():
     def __init__(self):
         self.size = 3
-        self.x = 768
+        self.x = 0
         self.image = pygame.image.load(str(path) + "Ground.png")
-        self.image = pygame.transform.scale(self.image, (128*self.size, 14*self.size))
+        self.image = pygame.transform.scale(self.image, (512*self.size, 14*self.size))
         self.y = 680
 
     def draw(self):
         screen.blit(self.image, (self.x, self.y))
-        screen.blit(self.image, (self.x - 256*self.size, self.y))
-        screen.blit(self.image, (self.x - 128*self.size, self.y))
-        screen.blit(self.image, (self.x + 128*self.size, self.y))
-        screen.blit(self.image, (self.x + 256*self.size, self.y))
-        screen.blit(self.image, (self.x + 384*self.size, self.y))
 
         if game.debug:
             pygame.draw.rect(screen, "dark green", (0, 680, 1400, 100))
-    
-    def update(self, amount = 3):
-        self.x -= amount
-        if self.x < -128:
-            self.x = 768
 
 ## shrub controller class
 class shrubs():
@@ -527,6 +516,7 @@ class shrub():
         if self.x < -100:
             game.shrubcontroller.allshrubs.remove(self)
 
+## draw number class
 class drawnumber():
     def __init__(self):
         self.numbers = []
@@ -557,12 +547,11 @@ class Game():
         self.shrubcontroller = shrubs()
         self.drawnumber = drawnumber()
         self.highscore = 0
+        self.framecount = 0
 
-        self.pipeTime = time.time()
-        self.cloudTime = time.time()
-        self.shrubTime = time.time()
-        self.pipeNextTime = 3
-        self.shrubNextTime = random.randint(1, 300)/100
+        self.pipeTime = 180
+        self.cloudTime = 300
+        self.shrubTime = random.randint(1, 300)/100
 
 
         self.menu.construct()
@@ -587,8 +576,7 @@ class Game():
                 self.bird.draw()
         
         ## stuff that is always drawn on top
-        if self.debug:
-            self.drawfps()
+        self.drawfps()
         self.ground.draw()
         self.shrubcontroller.draw()
         ## stuff that is drawn even more on top 
@@ -603,14 +591,12 @@ class Game():
         if self.gamestate == "Playing" and self.bird.alive:
             self.pipecontroller.update()
             self.background.update()
-            self.ground.update()
             self.bird.update()
             self.shrubcontroller.move()
         if self.gamestate == "Menu":
             if self.firstlaunch == True:
                 self.pipecontroller.update()
                 self.background.update()
-                self.ground.update()
                 self.shrubcontroller.move()
 
     def check(self):
@@ -622,25 +608,28 @@ class Game():
                 self.bird.die()
                 self.gamestate = "Menu"
                 self.fade.fadein()
-        ## add a pipe every 3(decreases) seconds and cloud every 1.5 seconds
-        if time.time() - self.pipeTime >= self.pipeNextTime and self.bird.alive:
-            self.pipeTime = time.time()
+        ## add a pipe every 3 (decreases) seconds (at 60fps)
+        if self.framecount >= self.pipeTime  and self.bird.alive:
+            self.pipeTime += 180
             self.pipecontroller.add(Pipe(1400, random.randint(300,600)))
-            if self.pipeNextTime > 2:
-                self.pipeNextTime -= 0.05
-            elif self.pipeNextTime > 1:
-                self.pipeNextTime -= 0.01
+            if self.pipeTime > 2:
+                self.pipeTime -= 0.05
+            elif self.pipeTime > 1:
+                self.pipeTime -= 0.01
             else:
-                self.pipeNextTime -= 0.001
-            print(f"Next pipe in {self.pipeNextTime} seconds")
-        if time.time() - self.cloudTime >= 1.5:
+                self.pipeTime -= 0.001
+        
+        ## add a cloud every 0.5 - 1.5 seconds (at 60fps)
+        if self.framecount == self.cloudTime:
             self.cloudcontroller.add(cloud())
-            self.cloudTime = time.time()
+            self.cloudTime = self.framecount + random.randint(30, 90)
+        
+        ## add a shrub every 0.2 - 1 seconds (at 60fps)
         if self.bird.alive:
-            if time.time() - self.shrubTime >= self.shrubNextTime:
+            if self.framecount >= self.shrubTime:
                 self.shrubcontroller.add(shrub())
-                self.shrubTime = time.time()
-                self.shrubNextTime = random.randint(1, 100)/100
+                self.shrubTime += random.randint(10,60)
+        
         if self.bird.score > self.highscore:
             self.highscore = self.bird.score
     ## toggle debug mode
@@ -657,8 +646,8 @@ class Game():
             self.pipecontroller.add(Pipe(800, random.randint(300,600)))
             self.fade.fadein()
             self.bird.jump()
-            self.pipeTime = time.time()
-            self.pipeNextTime = 3
+            self.pipeTime = self.framecount+180
+            self.bushTime = self.framecount + random.randint(30, 90)
     ## draw the score
     def drawscore(self, score, x = 640, y = 120, size = 2):
         if self.debug:
@@ -686,6 +675,7 @@ game.cloudcontroller.add(cloud(1100))
 bloodcount = 0 
 debugtimer = 0
 while game.running:
+    game.framecount += 1
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
     for event in pygame.event.get():
@@ -717,7 +707,6 @@ while game.running:
             game.menu.allbuttons[0].clicked = False
             game.gamestate = "Playing"
             firstframe = True
-            pygame.display.flip()
             game.particlecontroller.removeall()
             game.firstlaunch = False
             
@@ -736,8 +725,6 @@ while game.running:
                 pressed = False
 
 
-
-    # after drawing, flip the display
     pygame.display.flip()
     clock.tick(60)  # limits FPS to 60
 
