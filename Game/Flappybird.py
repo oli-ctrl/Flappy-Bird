@@ -617,6 +617,7 @@ class Game():
         ## add a shrub every 0.2 - 1 seconds (at 60fps)
         if self.bird.alive:
             if self.framecount >= self.shrubTime:
+                print(len(self.shrubcontroller.allshrubs))
                 self.shrubcontroller.add(shrub())
                 self.shrubTime += random.randint(10,60)
         
@@ -636,8 +637,8 @@ class Game():
             self.pipecontroller.add(Pipe(800, random.randint(300,600)))
             self.fade.fadein()
             self.bird.jump()
-            self.pipeTime = self.framecount+180
-            self.bushTime = self.framecount + random.randint(30, 90)
+            self.pipeTime = self.framecount  +180
+            self.shrubTime = self.framecount + random.randint(30, 90)
     ## draw the score
     def drawscore(self, score, x = 640, y = 120, size = 2):
         if self.debug:
