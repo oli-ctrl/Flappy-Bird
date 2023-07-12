@@ -241,11 +241,18 @@ class Bird():
 class Pipes():
     def __init__(self):
         self.pipes = []
+        self.width = 50
+        self.height = 500
+        self.bottompipe = pygame.image.load(str(path) + "Pipe.png")
+        self.bottompipe = pygame.transform.scale(self.bottompipe, (self.width*1.5, self.height))
+        self.toppipe = pygame.transform.flip(self.bottompipe, False, True)
     def draw(self):
         for i in self.pipes:
             i.draw()
     def add(self, pipe):
         self.pipes.append(pipe)
+        self.pipes[-1].width = self.width
+        self.pipes[-1].height = self.height
     def reset(self):
         self.pipes = []
     def update(self):
@@ -260,20 +267,15 @@ class Pipe ():
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.width = 50
-        self.height = 500
+        self.width = None
+        self.height = None
         self.gap = 200
         self.givenpoint = False
-        self.bottompipe = pygame.image.load(str(path) + "Pipe.png")
-        self.bottompipe = pygame.transform.scale(self.bottompipe, (self.width*1.5, self.height))
-        self.toppipe = pygame.image.load(str(path) + "Pipe.png")
-        self.toppipe = pygame.transform.scale(self.toppipe, (self.width*1.5, self.height))
-        self.toppipe = pygame.transform.flip(self.toppipe, False, True)
 
     ## draw the pipe
     def draw(self):
-        screen.blit(self.bottompipe, (self.x-15, self.y))
-        screen.blit(self.toppipe, (self.x-15, self.y - (self.height + self.gap)))
+        screen.blit(game.pipecontroller.bottompipe, (self.x-15, self.y))
+        screen.blit(game.pipecontroller.toppipe, (self.x-15, self.y - (self.height + self.gap)))
         if game.debug:
             pygame.draw.rect(screen, "green", (self.x , self.y, self.width, self.height))
             pygame.draw.rect(screen, "green", (self.x , self.y - (self.height + self.gap), self.width, self.height))
@@ -471,7 +473,10 @@ class shrubs():
     def __init__(self):
         self.allshrubs = []
         ## load shrub images
-
+        self.shrubimages = []
+        for i in range(1, 5):
+            self.shrubimages.append(pygame.image.load(str(path) + "Shrub" + str(i) + ".png"))
+            self.shrubimages[-1]
     def add(self, shrub):
         self.allshrubs.append(shrub)
 
@@ -491,19 +496,19 @@ class shrubs():
 ## shrub class
 class shrub():
     def __init__(self):
-        self.x = 1400
         self.size = random.randint(30, 50)
         self.depth = random.randint(3, 5)
+        self.x = 1400 + self.depth
         self.y = 715 - self.size*self.depth/3 
         color = 200+ self.depth*5 + random.randint(-10, 10)
         self.color = pygame.Color(color, color, color)
-        self.image = pygame.transform.scale(pygame.image.load(str(path) + "Shrub" + str(random.randint(1,5)) + ".png"), (self.size*self.depth/3, self.size*self.depth/3))
+        self.image = pygame.transform.scale(random.choice(game.shrubcontroller.shrubimages),(self.size*self.depth/3, self.size*self.depth/3))
+    
     def draw(self):
         screen.blit(self.image, (self.x-25, self.y-25))
         if game.debug:
             pygame.draw.rect(screen, (0,0,0), (self.x-25, self.y-25, self.size*self.depth/3, self.size*self.depth/3))
         
-    
     def move(self, amount = 2):
         self.x -= amount+(self.depth/2)
     
@@ -545,7 +550,7 @@ class Game():
 
         self.pipeTime = 180
         self.cloudTime = 300
-        self.shrubTime = random.randint(1, 300)/100
+        self.shrubTime = random.randint(10, 300)/10
 
 
         self.menu.construct()
