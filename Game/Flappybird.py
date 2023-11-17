@@ -64,7 +64,6 @@ class particle():
         self.y += self.vertvelocity
         self.x += self.horisontalvelocity
         self.bouncecooldown -= 1
-        
         ## decay particle
         self.lifetimer += 1
         if self.lifetimer > self.lifetime:
@@ -158,7 +157,7 @@ class Bird():
         else:
             screen.blit(rot_image, (self.x-self.size+10, self.y-self.size-18))
         if game.debug:
-            pygame.draw.circle(screen, "yellow", (self.x, self.y), self.size)
+            pygame.draw.rect(screen, "yellow", (self.x-self.size, self.y-self.size, self.size, self.size))
     
     ## makes the bird fall down when called
     def update(self):
@@ -622,7 +621,6 @@ class Game():
         ## add a shrub every 0.2 - 1 seconds (at 60fps)
         if self.bird.alive:
             if self.framecount >= self.shrubTime:
-                print(len(self.shrubcontroller.allshrubs))
                 self.shrubcontroller.add(shrub())
                 self.shrubTime += random.randint(10,60)
         
